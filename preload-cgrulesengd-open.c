@@ -27,6 +27,27 @@ static void *hook_init_ptr(void (**f)(), const char *fname)
   return handle;
 }
 
+static void _flex_cgroup_create(const char *path_usergroup_uid)
+{
+  char *path_limit_in_bytes;
+  FILE *file;
+
+  mkdir(path_usergroup_uid, 0755);
+
+  if (asprintf(&path_limit_in_bytes, "%s/memory.limit_in_bytes", path_usergroup_uid) < 0)
+    return;
+
+  if (!(file = fopen(path_limit_in_bytes, "w")))
+    goto out_asprintf;
+
+  fprintf(file, "%u", 800 * 1000 * 1000);
+
+ out_fd:
+  fclose(file);
+ out_asprintf:
+  free(path_limit_in_bytes);
+}
+
 static void _flex_cgroup_auto_create(const char *path)
 {
   pcre *re;
@@ -48,9 +69,7 @@ static void _flex_cgroup_auto_create(const char *path)
     goto out_pcre_compile;
 
   if (lstat(path_usergroup_uid, &sb) != 0 && errno == ENOENT)
-    {
-      mkdir(path_usergroup_uid, 0755);
-    }
+    _flex_cgroup_create(path_usergroup_uid);
 
  out_asprintf:
   free(path_usergroup_uid);
