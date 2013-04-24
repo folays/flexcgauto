@@ -58,7 +58,7 @@ static void _flex_cgroup_auto_create(const char *path)
   char *path_usergroup_uid;
   struct stat sb;
 
-  re = pcre_compile("^(/sys/fs/cgroup/memory/+usergroup/280890)/+tasks$", 0, &error, &erroffset, 0);
+  re = pcre_compile("^(/sys/fs/cgroup/memory/+usergroup/\\d+)/+tasks$", 0, &error, &erroffset, 0);
   if (!re)
     return;
   int rc = pcre_exec(re, 0, path, strlen(path), 0, 0, ovector, sizeof(ovector) / sizeof(*ovector));
