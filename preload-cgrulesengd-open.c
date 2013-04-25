@@ -27,7 +27,7 @@ static void *hook_init_ptr(void (**f)(), const char *fname)
   return handle;
 }
 
-static void _flex_cgroup_create(const char *path_usergroup_uid)
+static void _flex_cgroup_create_memory(const char *path_usergroup_uid)
 {
   char *path_limit_in_bytes;
   FILE *file;
@@ -48,17 +48,39 @@ static void _flex_cgroup_create(const char *path_usergroup_uid)
   free(path_limit_in_bytes);
 }
 
+static void _flex_cgroup_create_cpu(const char *path_usergroup_uid)
+{
+  char *path_shares;
+  FILE *file;
+
+  mkdir(path_usergroup_uid, 0755);
+
+  if (asprintf(&path_shares, "%s/cpu.shares", path_usergroup_uid) < 0)
+    return;
+
+  if (!(file = fopen(path_shares, "w")))
+    goto out_asprintf;
+
+  fprintf(file, "%u", 100);
+
+ out_fd:
+  fclose(file);
+ out_asprintf:
+  free(path_shares);
+}
+
 static void _flex_cgroup_auto_create(const char *path)
 {
   pcre *re;
   const char *error;
   int erroffset;
   int ret;
-  int ovector[3 * (1 + 1)]; /* 3 * (nb_captures + 1) */
+  int ovector[3 * (2 + 1)]; /* 3 * (nb_captures + 1) */
   char *path_usergroup_uid;
+  char *subsystem;
   struct stat sb;
 
-  re = pcre_compile("^(/sys/fs/cgroup/memory/+usergroup/\\d+)/+tasks$", 0, &error, &erroffset, 0);
+  re = pcre_compile("^(/sys/fs/cgroup/(memory|cpu)/+usergroup/\\d+)/+tasks$", 0, &error, &erroffset, 0);
   if (!re)
     return;
   int rc = pcre_exec(re, 0, path, strlen(path), 0, 0, ovector, sizeof(ovector) / sizeof(*ovector));
@@ -68,10 +90,18 @@ static void _flex_cgroup_auto_create(const char *path)
   if (asprintf(&path_usergroup_uid, "%.*s", ovector[3] - ovector[2], path + ovector[2]) < 0)
     goto out_pcre_compile;
 
-  if (lstat(path_usergroup_uid, &sb) != 0 && errno == ENOENT)
-    _flex_cgroup_create(path_usergroup_uid);
+  if (asprintf(&subsystem, "%.*s", ovector[5] - ovector[4], path + ovector[4]) < 0)
+    goto out_asprintf_path_usergroup_uid;
 
- out_asprintf:
+  if (lstat(path_usergroup_uid, &sb) != 0 && errno == ENOENT)
+    {
+      if (!strcmp(subsystem, "memory"))
+	_flex_cgroup_create_memory(path_usergroup_uid);
+      if (!strcmp(subsystem, "cpu"))
+	_flex_cgroup_create_cpu(path_usergroup_uid);
+    }
+
+ out_asprintf_path_usergroup_uid:
   free(path_usergroup_uid);
  out_pcre_compile:
   free(re);
