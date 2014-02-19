@@ -101,6 +101,8 @@ static void _flex_cgroup_auto_create(const char *path)
 	_flex_cgroup_create_cpu(path_usergroup_uid);
     }
 
+ out_asprintf_subsystem:
+  free(subsystem);
  out_asprintf_path_usergroup_uid:
   free(path_usergroup_uid);
  out_pcre_compile:
