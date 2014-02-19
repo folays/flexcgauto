@@ -1,0 +1,3 @@
+check process cgrulesengd with pidfile "/var/run/cgrulesengd.pid"
+ start = "/sbin/start-stop-daemon --start --oknodo --quiet --pidfile /var/run/cgrulesengd.pid --make-pidfile --exec /usr/sbin/cgrulesengd --startas /usr/bin/env -- LD_PRELOAD=/root/flexcgauto/libpreload-cgrulesengd-open.so /usr/sbin/cgrulesengd -n"
+ stop = "/sbin/start-stop-daemon --stop --oknodo --quiet --pidfile /var/run/cgrulesengd.pid --make-pidfile --exec /usr/sbin/cgrulesengd --startas /usr/bin/env -- LD_PRELOAD=/root/flexcgauto/libpreload-cgrulesengd-open.so /usr/sbin/cgrulesengd -n"
